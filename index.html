@@ -21,8 +21,9 @@
 <body class="bg-gray-50 min-h-screen font-sans text-gray-800">
 
     <!-- Top Ad Banner Space -->
-    <div class="max-w-4xl mx-auto mt-4 h-[90px] bg-gray-200 border border-gray-300 flex items-center justify-center text-gray-500 text-sm">
-        [Ad Space - 728x90 Banner Container]
+    <div class="max-w-4xl mx-auto mt-4 h-[90px] bg-gray-200 border border-gray-300 flex items-center justify-center text-gray-500 text-sm overflow-hidden">
+        <!-- Yahan Apna Adsterra ya Monetag ka 728x90 Banner Script Paste Karein -->
+        [Adsterra/Monetag - 728x90 Banner Space]
     </div>
 
     <div class="max-w-4xl mx-auto my-8 bg-white p-8 rounded-xl shadow-lg">
@@ -69,7 +70,7 @@
                 <!-- Loading Spinner -->
                 <div id="loadingSpinner" class="hidden flex-col items-center justify-center">
                     <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
-                    <p class="text-blue-600 font-semibold animate-pulse">Processing via AI...</p>
+                    <p class="text-blue-600 font-semibold animate-pulse">Processing via Stability AI...</p>
                 </div>
 
                 <!-- Result Image -->
@@ -80,16 +81,17 @@
     </div>
 
     <!-- Bottom Ad Banner Space -->
-    <div class="max-w-4xl mx-auto mb-8 h-[90px] bg-gray-200 border border-gray-300 flex items-center justify-center text-gray-500 text-sm">
-        [Ad Space - 728x90 Banner Container]
+    <div class="max-w-4xl mx-auto mb-8 h-[90px] bg-gray-200 border border-gray-300 flex items-center justify-center text-gray-500 text-sm overflow-hidden">
+        <!-- Yahan Apna Adsterra ya Monetag ka 728x90 Banner Script Paste Karein -->
+        [Adsterra/Monetag - 728x90 Banner Space]
     </div>
 
     <!-- Core App Logic -->
     <script>
         // -------------------------------------------------------------
-        // ⚠️ APNI API KEY YAHAN PASTE KAREIN
+        // ⚠️ STABILITY AI KI API KEY YAHAN PASTE KAREIN
         // -------------------------------------------------------------
-        const = "sk-SeLrDFwkSw3zEZrcXO8lGbZY5eQKY7QckuJHZd9U2QFCtUsy"; 
+        const STABILITY_API_KEY = "sk-SeLrDFwkSw3zEZrcXO8lGbZY5eQKY7QckuJHZd9U2QFCtUsy"; 
         // -------------------------------------------------------------
 
         const imageUpload = document.getElementById('imageUpload');
@@ -132,8 +134,8 @@
                 alert("Please enter a dress description!");
                 return;
             }
-            if (HUGGING_FACE_API_KEY === "YAHAN_APNI_API_KEY_PASTE_KAREIN") {
-                alert("Bhai, code mein apni API key daalna bhool gaye! Line 81 check karein.");
+            if (STABILITY_API_KEY === "YAHAN_APNI_API_KEY_PASTE_KAREIN") {
+                alert("Bhai, code mein Stability AI ki key daalna bhool gaye! Line 81 check karein.");
                 return;
             }
 
@@ -146,37 +148,40 @@
             generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
-                // API Model URL (InstructPix2Pix for image editing based on text instructions)
-                const API_URL = "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix";
+                // Stability AI Image-to-Image API Endpoint
+                const API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-v1-5/image-to-image";
                 
-                // InstructPix2Pix ko direct text aur image payload chahiye hota hai
-                // 3D avatars ke hisab se modified instruction
-                const instruction = `Make the character wear ${dressDescription}. Keep the exact same face, same pose, same background.`;
+                // Prompt Instruction
+                const instruction = `Make the character wear ${dressDescription}. Keep the exact same face, same 3D style, same pose, and same background.`;
 
                 // FormData create kar rahe hain API ke liye
                 const formData = new FormData();
-                formData.append("image", selectedFile);
-                formData.append("inputs", instruction);
+                formData.append('init_image', selectedFile);
+                formData.append('init_image_mode', 'IMAGE_STRENGTH');
+                formData.append('image_strength', 0.5); // Kitna percent original rakhna hai (0.5 means 50%)
+                formData.append('text_prompts[0][text]', instruction);
+                formData.append('text_prompts[0][weight]', 1);
 
                 // API Call
                 const response = await fetch(API_URL, {
-                    method: "POST",
+                    method: 'POST',
                     headers: {
-                        "Authorization": `Bearer ${HUGGING_FACE_API_KEY}`
-                        // Note: FormData ke sath Content-Type auto set ho jata hai
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${STABILITY_API_KEY}`
                     },
                     body: formData
                 });
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => null);
-                    console.error("API Error Response:", errorData);
-                    throw new Error("API request failed. " + (errorData?.error || "Check your API key and model status."));
+                    console.error("API Error Response:", data);
+                    throw new Error(data.message || "Stability API request failed.");
                 }
 
-                // API se image Blob (binary file) form mein wapas aati hai
-                const resultBlob = await response.blob();
-                const generatedImageUrl = URL.createObjectURL(resultBlob);
+                // Stability AI returns Base64 image
+                const base64Result = data.artifacts[0].base64;
+                const generatedImageUrl = `data:image/png;base64,${base64Result}`;
 
                 // Display Result
                 resultImage.src = generatedImageUrl;
