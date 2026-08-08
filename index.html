@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dress Changer Utility</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+
+    <!-- Top Ad Banner Space -->
+    <div class="max-w-4xl mx-auto mt-4 h-[90px] bg-gray-200 border border-gray-300 flex items-center justify-center text-gray-500 text-sm">
+        [Ad Space - 728x90 Banner Container]
+    </div>
+
+    <div class="max-w-4xl mx-auto my-8 bg-white p-8 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold text-center text-gray-900 mb-2">AI Dress Changer</h1>
+        <p class="text-center text-gray-500 mb-8">Upload a 3D avatar or statue, type a dress name, and let AI do the rest.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- Left Column: Input Section -->
+            <div class="space-y-6">
+                <!-- Image Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">1. Upload Base Image</label>
+                    <input type="file" id="imageUpload" accept="image/*" 
+                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-300 rounded-md p-2 cursor-pointer"/>
+                </div>
+
+                <!-- Image Preview -->
+                <div id="previewContainer" class="hidden">
+                    <p class="text-sm text-gray-500 mb-2">Original Image Preview:</p>
+                    <img id="imagePreview" class="w-full h-auto rounded-lg border border-gray-200" src="" alt="Preview">
+                </div>
+
+                <!-- Prompt Input -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">2. Enter Dress Description</label>
+                    <input type="text" id="dressInput" placeholder="e.g., green shirt, blue denim jacket" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <!-- Action Button -->
+                <button id="generateBtn" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-300 flex justify-center items-center">
+                    Generate Dress
+                </button>
+            </div>
+
+            <!-- Right Column: Output Section -->
+            <div class="bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center min-h-[400px] p-4 relative">
+                
+                <!-- Placeholder Text -->
+                <p id="outputPlaceholder" class="text-gray-500 text-center">Your generated image will appear here.</p>
+                
+                <!-- Loading Spinner -->
+                <div id="loadingSpinner" class="hidden flex-col items-center justify-center">
+                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+                    <p class="text-blue-600 font-semibold animate-pulse">Processing via AI...</p>
+                </div>
+
+                <!-- Result Image -->
+                <img id="resultImage" class="hidden w-full h-auto rounded-lg shadow-md" src="" alt="Generated Result">
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Bottom Ad Banner Space -->
+    <div class="max-w-4xl mx-auto mb-8 h-[90px] bg-gray-200 border border-gray-300 flex items-center justify-center text-gray-500 text-sm">
+        [Ad Space - 728x90 Banner Container]
+    </div>
+
+    <!-- Core App Logic -->
+    <script>
+        // -------------------------------------------------------------
+        // ⚠️ APNI API KEY YAHAN PASTE KAREIN
+        // -------------------------------------------------------------
+        const HUGGING_FACE_API_KEY = "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"; 
+        // -------------------------------------------------------------
+
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewContainer = document.getElementById('previewContainer');
+        const dressInput = document.getElementById('dressInput');
+        const generateBtn = document.getElementById('generateBtn');
+        
+        const outputPlaceholder = document.getElementById('outputPlaceholder');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const resultImage = document.getElementById('resultImage');
+
+        let base64Image = null;
+        let selectedFile = null;
+
+        // Handle Image Upload and Preview
+        imageUpload.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    base64Image = e.target.result;
+                    imagePreview.src = base64Image;
+                    previewContainer.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle Generate Button Click
+        generateBtn.addEventListener('click', async function() {
+            const dressDescription = dressInput.value.trim();
+
+            if (!selectedFile) {
+                alert("Please upload a base image first!");
+                return;
+            }
+            if (!dressDescription) {
+                alert("Please enter a dress description!");
+                return;
+            }
+            if (HUGGING_FACE_API_KEY === "YAHAN_APNI_API_KEY_PASTE_KAREIN") {
+                alert("Bhai, code mein apni API key daalna bhool gaye! Line 81 check karein.");
+                return;
+            }
+
+            // UI Changes: Show loader, hide result
+            outputPlaceholder.classList.add('hidden');
+            resultImage.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+            loadingSpinner.classList.add('flex');
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                // API Model URL (InstructPix2Pix for image editing based on text instructions)
+                const API_URL = "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix";
+                
+                // InstructPix2Pix ko direct text aur image payload chahiye hota hai
+                // 3D avatars ke hisab se modified instruction
+                const instruction = `Make the character wear ${dressDescription}. Keep the exact same face, same pose, same background.`;
+
+                // FormData create kar rahe hain API ke liye
+                const formData = new FormData();
+                formData.append("image", selectedFile);
+                formData.append("inputs", instruction);
+
+                // API Call
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${HUGGING_FACE_API_KEY}`
+                        // Note: FormData ke sath Content-Type auto set ho jata hai
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    console.error("API Error Response:", errorData);
+                    throw new Error("API request failed. " + (errorData?.error || "Check your API key and model status."));
+                }
+
+                // API se image Blob (binary file) form mein wapas aati hai
+                const resultBlob = await response.blob();
+                const generatedImageUrl = URL.createObjectURL(resultBlob);
+
+                // Display Result
+                resultImage.src = generatedImageUrl;
+                resultImage.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                loadingSpinner.classList.remove('flex');
+
+            } catch (error) {
+                console.error("Error generating image:", error);
+                alert("Error: " + error.message);
+                loadingSpinner.classList.add('hidden');
+                loadingSpinner.classList.remove('flex');
+                outputPlaceholder.classList.remove('hidden');
+                outputPlaceholder.innerText = "Error generating image. Check console log.";
+            } finally {
+                // Reset button state
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+    </script>
+</body>
+</html>
