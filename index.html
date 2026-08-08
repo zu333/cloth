@@ -107,7 +107,7 @@
         let base64Image = null;
         let selectedFile = null;
 
-        // Smart Resize Function (To meet API multiples of 64 requirement)
+        // Smart Resize & Compress Function (JPEG 90% Quality for API Limit)
         const resizeImageForAPI = (file) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -118,9 +118,9 @@
                         
                         let targetWidth = img.width;
                         let targetHeight = img.height;
-                        const maxDim = 512; // Standard size for API speed & cost
+                        const maxDim = 512; // API limit optimized size
 
-                        // Maintain aspect ratio while sizing down
+                        // Calculate new dimensions maintaining aspect ratio
                         if (targetWidth > targetHeight) {
                             targetHeight = Math.round((targetHeight * maxDim) / targetWidth);
                             targetWidth = maxDim;
@@ -129,7 +129,7 @@
                             targetHeight = maxDim;
                         }
 
-                        // Snap to nearest multiple of 64 (Strict requirement for Stability AI)
+                        // Snap to multiples of 64
                         targetWidth = Math.max(64, Math.round(targetWidth / 64) * 64);
                         targetHeight = Math.max(64, Math.round(targetHeight / 64) * 64);
 
@@ -137,12 +137,18 @@
                         canvas.height = targetHeight;
                         
                         const ctx = canvas.getContext('2d');
+                        
+                        // Fill white background just in case image is transparent (JPEG doesn't support transparency)
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.fillRect(0, 0, targetWidth, targetHeight);
+                        
+                        // Draw image
                         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
                         
-                        // Convert canvas back to a file blob
+                        // Convert to JPEG format with 90% quality to strictly keep it under 5MB
                         canvas.toBlob((blob) => {
                             resolve(blob);
-                        }, 'image/png');
+                        }, 'image/jpeg', 0.9);
                     };
                     img.src = e.target.result;
                 };
@@ -150,7 +156,7 @@
             });
         };
 
-        // Handle Image Upload and Preview
+        // Handle Image Upload
         imageUpload.addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file) {
@@ -165,7 +171,7 @@
             }
         });
 
-        // Handle Generate Button Click
+        // Handle Generation
         generateBtn.addEventListener('click', async function() {
             const dressDescription = dressInput.value.trim();
 
@@ -182,7 +188,6 @@
                 return;
             }
 
-            // UI Changes: Show loader, hide result
             outputPlaceholder.classList.add('hidden');
             resultImage.classList.add('hidden');
             loadingSpinner.classList.remove('hidden');
@@ -191,24 +196,21 @@
             generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
-                // Auto Resize Image before sending to API
+                // Resize & compress file automatically
                 const resizedImageBlob = await resizeImageForAPI(selectedFile);
 
-                // Stability AI Image-to-Image API Endpoint
                 const API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-v1-5/image-to-image";
-                
                 const instruction = `Make the character wear ${dressDescription}. Keep the exact same face, same 3D style, same pose, and same background.`;
 
-                // FormData create kar rahe hain API ke liye
                 const formData = new FormData();
-                // Ab original file ki bajaye resized file ja rahi hai
-                formData.append('init_image', resizedImageBlob, 'image.png');
+                
+                // Append JPEG blob instead of PNG
+                formData.append('init_image', resizedImageBlob, 'image.jpg');
                 formData.append('init_image_mode', 'IMAGE_STRENGTH');
                 formData.append('image_strength', 0.5); 
                 formData.append('text_prompts[0][text]', instruction);
                 formData.append('text_prompts[0][weight]', 1);
 
-                // API Call
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
@@ -221,15 +223,12 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    console.error("API Error Response:", data);
                     throw new Error(data.message || "Stability API request failed.");
                 }
 
-                // API Result
                 const base64Result = data.artifacts[0].base64;
-                const generatedImageUrl = `data:image/png;base64,${base64Result}`;
+                const generatedImageUrl = `data:image/jpeg;base64,${base64Result}`;
 
-                // Display Result
                 resultImage.src = generatedImageUrl;
                 resultImage.classList.remove('hidden');
                 loadingSpinner.classList.add('hidden');
