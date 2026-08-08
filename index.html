@@ -138,14 +138,14 @@
                         
                         const ctx = canvas.getContext('2d');
                         
-                        // Fill white background just in case image is transparent (JPEG doesn't support transparency)
+                        // Fill white background just in case image is transparent
                         ctx.fillStyle = "#FFFFFF";
                         ctx.fillRect(0, 0, targetWidth, targetHeight);
                         
                         // Draw image
                         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
                         
-                        // Convert to JPEG format with 90% quality to strictly keep it under 5MB
+                        // Convert to JPEG format with 90% quality
                         canvas.toBlob((blob) => {
                             resolve(blob);
                         }, 'image/jpeg', 0.9);
@@ -199,12 +199,13 @@
                 // Resize & compress file automatically
                 const resizedImageBlob = await resizeImageForAPI(selectedFile);
 
-                const API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-v1-5/image-to-image";
+                // Updated Model Endpoint to v1-6
+                const API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-v1-6/image-to-image";
                 const instruction = `Make the character wear ${dressDescription}. Keep the exact same face, same 3D style, same pose, and same background.`;
 
                 const formData = new FormData();
                 
-                // Append JPEG blob instead of PNG
+                // Append JPEG blob
                 formData.append('init_image', resizedImageBlob, 'image.jpg');
                 formData.append('init_image_mode', 'IMAGE_STRENGTH');
                 formData.append('image_strength', 0.5); 
